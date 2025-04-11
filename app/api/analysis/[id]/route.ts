@@ -7,14 +7,17 @@ export const runtime = "nodejs"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    if (!params?.id) {
+    const id = context.params.id
+    
+    if (!id) {
       throw new Error("ID não fornecido")
     }
 
-    const resultsPath = join(process.cwd(), "uploads", params.id, "results.json")
+    console.log(`Fetching analysis for ID: ${id}`)
+    const resultsPath = join(process.cwd(), "uploads", id, "results.json")
     console.log(`Looking for results at: ${resultsPath}`)
 
     const results = await readFile(resultsPath, "utf-8")
