@@ -7,17 +7,17 @@ export const runtime = "nodejs"
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const id = await Promise.resolve(context.params.id)
+    const id = params.id
     
     if (!id) {
       throw new Error("ID não fornecido")
     }
 
     console.log(`Fetching analysis for ID: ${id}`)
-    const resultsPath = join("/tmp", "uploads", id, "results.json")
+    const resultsPath = join(process.cwd(), "uploads", id, "results.json")
     console.log(`Looking for results at: ${resultsPath}`)
 
     try {

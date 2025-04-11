@@ -34,5 +34,5 @@ yarn-error.log*
 next-env.d.ts
 
 # uploads
-/uploads 
+/uploads
 node_modules
