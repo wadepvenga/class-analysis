@@ -13,6 +13,8 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["uploads/**"]
+  external_node_modules = ["@google/generative-ai"]
 
 [[headers]]
   for = "/*"
