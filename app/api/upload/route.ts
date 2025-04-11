@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     console.log(`Recebido arquivo PDF: ${pdf.name}, tamanho: ${pdf.size} bytes, tipo: ${pdf.type}`)
 
     const id = uuidv4()
-    const uploadDir = join("/tmp", "uploads", id)
+    const uploadDir = join(process.cwd(), "uploads", id)
     
     await mkdir(uploadDir, { recursive: true })
 
@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error processing upload:", error)
     return NextResponse.json(
-      { error: "Erro ao processar o upload" },
+      { 
+        error: "Erro ao processar o upload",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
