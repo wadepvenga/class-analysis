@@ -1,12 +1,12 @@
 [build]
-  command = "pnpm install && pnpm run build"
+  command = "pnpm run build"
   publish = ".next"
 
 [build.environment]
-  NEXT_USE_NETLIFY_EDGE = "true"
-  NEXT_FORCE_EDGE_IMAGES = "true"
+  NEXT_PUBLIC_SUPABASE_URL = "https://xcevjnmdqthbnprywyyv.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjZXZqbm1kcXRoYm5wcnl3eXl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwNjY0OTgsImV4cCI6MjA1OTY0MjQ5OH0.JbEXstJn_vmJoDBSg3xMJN5TmR3ciSh1AoyAAqRiZpw"
   NODE_VERSION = "20"
-  NPM_FLAGS = "--version"
+  UPLOAD_DIR = "uploads"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
