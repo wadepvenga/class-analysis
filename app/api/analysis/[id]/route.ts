@@ -7,10 +7,10 @@ export const runtime = "nodejs"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const id = params.id
+    const id = await context.params.id
     
     if (!id) {
       throw new Error("ID não fornecido")
