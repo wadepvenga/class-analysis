@@ -33,20 +33,23 @@
 # Configuração para lidar com uploads grandes
 [build.processing]
   skip_processing = false
+
 [build.processing.images]
   compress = true
+
 [build.processing.images.resize]
   quality = 85
+
 [build.processing.css]
   bundle = true
   minify = true
+
 [build.processing.js]
   bundle = true
   minify = true
+
 [build.processing.html]
   pretty_urls = true
-[build.processing.images]
-  compress = true
 
 [functions.upload]
   included_files = ["uploads/**"] 
