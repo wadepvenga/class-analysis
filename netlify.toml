@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm run build"
+  command = "pnpm run build && cd netlify && npm install"
   publish = ".next"
   functions = "netlify/functions"
 
@@ -13,9 +13,6 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[[plugins]]
-  package = "netlify-plugin-inline-functions-env"
 
 # Redirecionamentos e configurações de proxy
 [[redirects]]
