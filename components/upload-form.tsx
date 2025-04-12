@@ -101,14 +101,23 @@ export function UploadForm() {
       console.log(`Enviando arquivo de vídeo: ${videoFile.name} (${videoFile.size} bytes, tipo: ${videoFile.type})`)
       console.log(`Enviando arquivo PDF: ${pdfFile.name} (${pdfFile.size} bytes, tipo: ${pdfFile.type})`)
 
-      const response = await fetch("/api/upload", {
+      // Detectar se estamos no Netlify
+      const isNetlify = window.location.hostname.includes('netlify.app')
+      const uploadUrl = isNetlify 
+        ? '/.netlify/functions/upload' 
+        : '/api/upload'
+      
+      console.log(`Usando endpoint de upload: ${uploadUrl}`)
+
+      const response = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Upload failed with status: ${response.status}`)
+        console.error("Detalhes do erro:", errorData)
+        throw new Error(errorData.error || errorData.details || `Upload failed with status: ${response.status}`)
       }
 
       const data = await response.json()

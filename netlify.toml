@@ -1,6 +1,7 @@
 [build]
   command = "pnpm run build"
   publish = ".next"
+  functions = "netlify/functions"
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://xcevjnmdqthbnprywyyv.supabase.co"
@@ -8,14 +9,27 @@
   NODE_VERSION = "20"
   UPLOAD_DIR = "uploads"
   DEBUG = "true"
+  LOGS_ACCESS_TOKEN = "6de3b4b6-8fcf-4a3a-9f7c-be55db65234e"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions]
-  node_bundler = "esbuild"
-  included_files = ["uploads/**"]
-  external_node_modules = ["@google/generative-ai"]
+[[plugins]]
+  package = "netlify-plugin-inline-functions-env"
+
+# Redirecionamentos e configurações de proxy
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Headers específicos para tratar CORS
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "*"
 
 [[headers]]
   for = "/*"
@@ -50,6 +64,11 @@
 
 [build.processing.html]
   pretty_urls = true
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["uploads/**"]
+  external_node_modules = ["@google/generative-ai"]
 
 [functions.upload]
   included_files = ["uploads/**"] 

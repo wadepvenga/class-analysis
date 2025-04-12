@@ -1,0 +1,14 @@
+{
+  "name": "class-analysis-functions",
+  "version": "1.0.0",
+  "description": "Funções serverless para análise de aulas",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.33.1",
+    "formidable": "^2.1.2",
+    "uuid": "^9.0.0"
+  }
+} 
