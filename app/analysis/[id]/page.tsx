@@ -174,7 +174,7 @@ export default function AnalysisPage() {
   return (
     <div className="container mx-auto max-w-5xl py-12">
       <AnalysisReport 
-        analysis={analysisData.markdown || analysisData.analysis || ""} 
+        analysis={analysisData.result || ""} 
         transcript={analysisData.transcript} 
         timestamp={analysisData.timestamp} 
         videoUrl={analysisData.videoUrl} 

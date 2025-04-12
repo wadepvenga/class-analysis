@@ -48,6 +48,7 @@ export interface AnalysisData {
   error?: string
   markdown?: string
   analysis?: string
+  result?: string
   transcript: string
   timestamp: string
   videoUrl?: string

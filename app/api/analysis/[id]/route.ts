@@ -7,26 +7,28 @@ export const runtime = "nodejs"
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
+  const id = params.id
+  console.log(`Fetching analysis for ID: ${id}`)
+  
   try {
-    const id = await context.params.id
-    
-    if (!id) {
-      throw new Error("ID não fornecido")
-    }
-
-    console.log(`Fetching analysis for ID: ${id}`)
     const resultsPath = join(process.cwd(), "uploads", id, "results.json")
     console.log(`Looking for results at: ${resultsPath}`)
 
     try {
       const results = await readFile(resultsPath, "utf-8")
-      return NextResponse.json(JSON.parse(results))
+      const parsedResults = JSON.parse(results)
+      console.log("Results found:", parsedResults)
+      return NextResponse.json(parsedResults)
     } catch (error: any) {
       if (error?.code === 'ENOENT') {
+        console.log("Results file not found, analysis still processing")
         return NextResponse.json(
-          { error: "Análise ainda em processamento" },
+          { 
+            status: "processing",
+            error: "Análise ainda em processamento" 
+          },
           { status: 202 }
         )
       }
@@ -36,6 +38,7 @@ export async function GET(
     console.error("Error fetching analysis:", error)
     return NextResponse.json(
       { 
+        status: "error",
         error: "Erro ao buscar análise",
         details: error instanceof Error ? error.message : String(error)
       },

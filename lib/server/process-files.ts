@@ -23,8 +23,8 @@ export async function processFilesAction(params: ProcessFilesParams) {
 
     const analysis = await analyzeClassWithGemini(videoPath, pdfPath)
     
-    // Save results to tmp directory
-    const resultsPath = join("/tmp", "uploads", id, "results.json")
+    // Save results in the project's uploads directory
+    const resultsPath = join(process.cwd(), "uploads", id, "results.json")
     await writeFile(
       resultsPath,
       JSON.stringify({

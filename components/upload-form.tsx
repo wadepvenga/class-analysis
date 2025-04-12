@@ -112,15 +112,23 @@ export function UploadForm() {
       }
 
       const data = await response.json()
-      const analysisId = data.analysisId
+      console.log("Response data:", data)
+      const analysisId = data.id
+      console.log("Analysis ID:", analysisId)
 
       clearInterval(progressInterval)
       setProgress(100)
 
-      // Navigate to results page
-      setTimeout(() => {
-        router.push(`/analysis/${analysisId}`)
-      }, 1000)
+      // Navigate to results page with a delay to ensure state is updated
+      if (analysisId) {
+        console.log("Redirecting to:", `/analysis/${analysisId}`)
+        setTimeout(() => {
+          router.push(`/analysis/${analysisId}`)
+        }, 1500)
+      } else {
+        console.error("No analysis ID received from server")
+        throw new Error("No analysis ID received from server")
+      }
     } catch (err) {
       console.error("Upload error:", err)
       setError(err instanceof Error ? err.message : "Ocorreu um erro durante o upload")
