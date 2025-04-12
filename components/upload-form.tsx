@@ -109,34 +109,58 @@ export function UploadForm() {
       
       console.log(`Usando endpoint de upload: ${uploadUrl}`)
 
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        body: formData,
-      })
+      try {
+        // Adicionando timeout de 30 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          body: formData,
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('Resposta do servidor:', response.status, response.statusText);
+        
+        const responseText = await response.text();
+        console.log('Texto da resposta:', responseText);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log("Response data:", data);
+        } catch (parseError) {
+          console.error("Erro ao parsear resposta:", parseError);
+          throw new Error(`Resposta não é um JSON válido: ${responseText}`);
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("Detalhes do erro:", errorData)
-        throw new Error(errorData.error || errorData.details || `Upload failed with status: ${response.status}`)
-      }
+        if (!response.ok) {
+          throw new Error(data.error || data.details || `Upload failed with status: ${response.status}`);
+        }
 
-      const data = await response.json()
-      console.log("Response data:", data)
-      const analysisId = data.id
-      console.log("Analysis ID:", analysisId)
+        const analysisId = data.id;
+        console.log("Analysis ID:", analysisId);
 
-      clearInterval(progressInterval)
-      setProgress(100)
+        clearInterval(progressInterval)
+        setProgress(100)
 
-      // Navigate to results page with a delay to ensure state is updated
-      if (analysisId) {
-        console.log("Redirecting to:", `/analysis/${analysisId}`)
-        setTimeout(() => {
-          router.push(`/analysis/${analysisId}`)
-        }, 1500)
-      } else {
-        console.error("No analysis ID received from server")
-        throw new Error("No analysis ID received from server")
+        // Navigate to results page with a delay to ensure state is updated
+        if (analysisId) {
+          console.log("Redirecting to:", `/analysis/${analysisId}`)
+          setTimeout(() => {
+            router.push(`/analysis/${analysisId}`)
+          }, 1500)
+        } else {
+          console.error("No analysis ID received from server")
+          throw new Error("No analysis ID received from server")
+        }
+      } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Requisição excedeu o tempo limite de 30 segundos');
+        }
+        throw fetchError;
       }
     } catch (err) {
       console.error("Upload error:", err)
