@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { mkdir, writeFile } from "fs/promises"
-import { join } from "path"
-import { v4 as uuidv4 } from "uuid"
+import { uploadFilesToSupabase } from "@/lib/upload-service"
 import { processFilesAction } from "@/lib/server/process-files"
 
 // Explicitly set the runtime to nodejs
@@ -10,11 +8,23 @@ export const runtime = "nodejs"
 // This file only runs on the server
 export async function POST(request: NextRequest) {
   try {
+    console.log("API de upload iniciada", { environment: process.env.NODE_ENV, uploadDir: process.env.UPLOAD_DIR })
     const formData = await request.formData()
+    console.log("FormData recebido", { 
+      hasVideo: !!formData.get("video"), 
+      hasPDF: !!formData.get("pdf"),
+      keys: [...formData.keys()]
+    })
+    
     const video = formData.get("video") as File
     const pdf = formData.get("pdf") as File
+    const modality = formData.get("modality") as string
+    const book = formData.get("book") as string
+    const classNumber = formData.get("classNumber") as string
+    const teacherName = formData.get("teacherName") as string
 
     if (!video || !pdf) {
+      console.log("Arquivos obrigatórios ausentes", { video: !!video, pdf: !!pdf })
       return NextResponse.json(
         { error: "Vídeo e PDF são obrigatórios" },
         { status: 400 }
@@ -24,34 +34,31 @@ export async function POST(request: NextRequest) {
     console.log(`Recebido arquivo de vídeo: ${video.name}, tamanho: ${video.size} bytes, tipo: ${video.type}`)
     console.log(`Recebido arquivo PDF: ${pdf.name}, tamanho: ${pdf.size} bytes, tipo: ${pdf.type}`)
 
-    const id = uuidv4()
-    const uploadDir = join(process.cwd(), "uploads", id)
-    
-    await mkdir(uploadDir, { recursive: true })
+    // Upload files to Supabase Storage
+    const result = await uploadFilesToSupabase(video, pdf)
+    console.log("Arquivos enviados para o Supabase:", result)
 
-    const videoPath = join(uploadDir, video.name)
-    const pdfPath = join(uploadDir, pdf.name)
+    // Process files
+    try {
+      await processFilesAction({
+        id: result.id,
+        videoPath: result.videoUrl,
+        pdfPath: result.pdfUrl,
+        videoName: video.name,
+        pdfName: pdf.name,
+        metadata: {
+          modality,
+          book,
+          classNumber,
+          teacherName
+        }
+      })
+    } catch (processError) {
+      console.error("Erro ao processar arquivos, mas o upload foi realizado:", processError)
+      // Continuaremos mesmo com erro no processamento, pois os arquivos já foram enviados
+    }
 
-    const videoBuffer = Buffer.from(await video.arrayBuffer())
-    const pdfBuffer = Buffer.from(await pdf.arrayBuffer())
-
-    await writeFile(videoPath, videoBuffer)
-    await writeFile(pdfPath, pdfBuffer)
-
-    console.log(`Arquivos salvos em: ${uploadDir}`)
-    console.log(`Caminho do vídeo: ${videoPath}`)
-    console.log(`Caminho do PDF: ${pdfPath}`)
-
-    // Process the files
-    await processFilesAction({
-      id,
-      videoPath,
-      pdfPath,
-      videoName: video.name,
-      pdfName: pdf.name,
-    })
-
-    return NextResponse.json({ id })
+    return NextResponse.json({ id: result.id })
   } catch (error) {
     console.error("Error processing upload:", error)
     return NextResponse.json(

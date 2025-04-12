@@ -159,14 +159,54 @@ export async function callGeminiAPI(prompt: string): Promise<string> {
   }
 }
 
+// Adicionando esta função para processar URLs em vez de caminhos locais
 export async function analyzeClassWithGemini(videoPath: string, pdfPath: string): Promise<string> {
-  const prompt = `Você é um analista educacional especializado em avaliação de aulas de inglês, com foco específico na metodologia INSIGHT para adultos. 
-
-INSTRUÇÕES IMPORTANTES:
-1. NÃO comece o relatório com a transcrição.
-2. A transcrição deve aparecer APENAS na seção "Transcrição da Aula".
-3. A transcrição deve ser COMPLETA, do início ao fim da aula.
-4. Ao analisar a aula, faça referência aos momentos específicos usando timestamps [MM:SS].
+  try {
+    console.log("Analisando classe com o Gemini, caminhos:", { videoPath, pdfPath })
+    
+    // Verificar se os caminhos são URLs (para o Supabase)
+    const isVideoUrl = videoPath.startsWith('http')
+    const isPdfUrl = pdfPath.startsWith('http')
+    
+    let videoContent: string
+    let pdfContent: string
+    
+    if (isVideoUrl && isPdfUrl) {
+      console.log("Usando URLs para análise")
+      
+      // Função para buscar o conteúdo de uma URL
+      const fetchContent = async (url: string): Promise<ArrayBuffer> => {
+        console.log(`Buscando conteúdo de ${url}`)
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`Falha ao buscar ${url}: ${response.status} ${response.statusText}`)
+        }
+        return await response.arrayBuffer()
+      }
+      
+      // Buscar o conteúdo do vídeo e do PDF
+      try {
+        const [videoBuffer, pdfBuffer] = await Promise.all([
+          fetchContent(videoPath),
+          fetchContent(pdfPath)
+        ])
+        
+        // Criar os conteúdos base64
+        videoContent = Buffer.from(videoBuffer).toString('base64')
+        pdfContent = Buffer.from(pdfBuffer).toString('base64')
+      } catch (fetchError) {
+        console.error("Erro ao buscar conteúdo:", fetchError)
+        throw fetchError
+      }
+    } else {
+      console.log("Usando caminhos locais para análise")
+      // Usar a função fileToBase64 existente para caminhos locais
+      const { readFile } = await import('fs/promises')
+      videoContent = (await readFile(videoPath)).toString('base64')
+      pdfContent = (await readFile(pdfPath)).toString('base64')
+    }
+    
+    const prompt = `Você é um analista educacional especializado em avaliação de aulas de inglês, com foco específico na metodologia INSIGHT para adultos.
 
 # Relatório de Análise de Aula - INSIGHT
 
@@ -176,22 +216,6 @@ INSTRUÇÕES IMPORTANTES:
 - Objetivos: [liste os objetivos principais]
 - Duração total: [duração em minutos]
 
-## Transcrição da Aula 📝
-
-[ATENÇÃO: Coloque aqui a transcrição COMPLETA da aula, seguindo este formato]
-
-[00:00] Início da Aula
-Professor: [transcreva a fala exata]
-Ação: [descreva a ação]
-Aluno(s): [transcreva as respostas, quando houver]
-
-[MM:SS] Nome da Atividade
-Professor: [transcreva a fala exata]
-Ação: [descreva a ação]
-Aluno(s): [transcreva as respostas]
-
-[Continuar até o final da aula, incluindo TODAS as interações]
-
 ## Análise da Metodologia INSIGHT 📊
 
 ### Lead-in
@@ -200,60 +224,90 @@ Aluno(s): [transcreva as respostas]
 
 ### Vocabulary Focus
 - Apresentação do vocabulário
-- Técnicas de prática utilizadas
+- Prática inicial
 - Checagem de compreensão
 
-### Grammar
-- Apresentação da estrutura
-- Prática controlada
-- Prática livre
-
-### Skills Work
-- Reading activities
-- Listening exercises
-- Speaking opportunities
-- Writing tasks
-
-### Production/Practice
-- Atividades comunicativas
-- Trabalho em pares/grupos
+### Grammar Practice
+- Apresentação das estruturas gramaticais
+- Exercícios e atividades
 - Correção de erros
 
-### Wrap-up
-- Revisão do conteúdo
-- Avaliação da aprendizagem
+### Integrated Skills
+- Integração das habilidades (listening, speaking, reading, writing)
+- Atividades comunicativas
+- Interação entre os alunos
 
-## Análise Quantitativa 📈
+### Natural Communication
+- Oportunidades para comunicação autêntica
+- Qualidade das discussões
+- Uso do inglês pelos alunos
 
-### Tempo de Fala
-- Professor: [X]%
-- Alunos: [Y]%
-- Interação entre alunos: [Z]%
+### Target Language Review
+- Revisão do conteúdo principal
+- Eficácia da consolidação
+- Follow-up assignments
 
-### Uso da Língua-Alvo
-- Inglês: [X]%
-- Língua materna: [Y]%
+## Pontos Fortes
+- [liste pelo menos 3 aspectos positivos observados]
 
-## Avaliação Qualitativa ⭐
+## Oportunidades de Melhoria
+- [liste áreas específicas para desenvolvimento]
 
-### Pontos Fortes
-- [Liste pontos positivos específicos]
-- [Cite exemplos concretos da aula]
+## Recomendações para o Professor
+- [forneça orientações práticas e específicas]
 
-### Áreas para Desenvolvimento
-- [Identifique aspectos a melhorar]
-- [Sugira alternativas específicas]
+Por favor, analise o conteúdo do vídeo e do material didático PDF fornecidos.`
 
-### Recomendações
-1. [Recomendação específica 1]
-2. [Recomendação específica 2]
-3. [Recomendação específica 3]
+    console.log("Enviando prompt para o Gemini")
 
-LEMBRE-SE: 
-- A transcrição deve estar APENAS na seção "Transcrição da Aula"
-- Inclua TODAS as interações da aula na transcrição
-- Use timestamps [MM:SS] para referenciar momentos específicos em suas análises
-- Mantenha o foco na metodologia INSIGHT para adultos`
+    // Chamar o Gemini com o prompt e os conteúdos do vídeo e do PDF
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision-latest:generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY || ''
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: 'video/mp4',
+                  data: videoContent
+                }
+              },
+              {
+                inline_data: {
+                  mime_type: 'application/pdf',
+                  data: pdfContent
+                }
+              }
+            ]
+          }
+        ],
+        generation_config: {
+          temperature: 0.2,
+          top_p: 0.95,
+          top_k: 40,
+          max_output_tokens: 8192
+        }
+      })
+    })
 
-  return await callGeminiMultimodalAPI(videoPath, pdfPath, prompt)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("Erro na resposta do Gemini:", errorText)
+      throw new Error(`Erro na API do Gemini: ${response.status} ${errorText}`)
+    }
+
+    const data = await response.json()
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar a análise."
+    console.log("Análise concluída com sucesso")
+    return result
+  } catch (error) {
+    console.error("Erro ao analisar com o Gemini:", error)
+    throw new Error(`Falha na análise: ${error instanceof Error ? error.message : String(error)}`)
+  }
 }
