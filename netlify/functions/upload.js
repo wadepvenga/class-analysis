@@ -1,36 +1,40 @@
-// Função de log aprimorada
+// Função de log adaptada para o Netlify
 const log = {
   info: (message, data = {}) => {
-    console.log(JSON.stringify({
-      level: 'info',
-      timestamp: new Date().toISOString(),
-      message,
-      ...data
-    }));
+    // Netlify exibe melhor logs simples sem stringify
+    console.log('INFO:', message);
+    console.log('DATA:', data);
   },
   error: (message, error = null, data = {}) => {
-    console.error(JSON.stringify({
-      level: 'error',
-      timestamp: new Date().toISOString(),
-      message,
-      errorDetails: error ? {
+    console.error('ERROR:', message);
+    if (error) {
+      console.error('ERROR_DETAILS:', {
         name: error.name,
         message: error.message,
         stack: error.stack,
-      } : null,
-      ...data
-    }));
+      });
+    }
+    if (Object.keys(data).length > 0) {
+      console.error('ERROR_DATA:', data);
+    }
   }
 };
 
 // Função para validar o corpo da requisição
 const validateRequestBody = (body) => {
+  if (!body) {
+    return { valid: false, error: new Error('Body is empty') };
+  }
+
   try {
+    // Log do body antes do parse
+    console.log('RAW_BODY:', body);
+    
     const parsedBody = JSON.parse(body);
-    log.info('Request body parsed successfully', { parsedBody });
+    log.info('Body parsed successfully', parsedBody);
     return { valid: true, data: parsedBody };
   } catch (error) {
-    log.error('Failed to parse request body', error, { rawBody: body });
+    log.error('Failed to parse body', error, { bodyReceived: body });
     return { valid: false, error };
   }
 };
@@ -40,32 +44,24 @@ exports.handler = async (event, context) => {
   // ID único para rastrear a requisição
   const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2);
   
-  log.info('Function invoked', {
-    requestId,
-    environment: {
-      nodeEnv: process.env.NODE_ENV,
-      netlifyEnv: process.env.NETLIFY,
-      functionName: context.functionName,
-      deployId: process.env.DEPLOY_ID
-    }
-  });
-
-  log.info('Request details', {
-    requestId,
-    method: event.httpMethod,
+  console.log('REQUEST_ID:', requestId);
+  console.log('EVENT:', {
+    httpMethod: event.httpMethod,
     path: event.path,
     headers: event.headers,
-    bodyLength: event.body ? event.body.length : 0,
-    queryStringParameters: event.queryStringParameters,
+    bodyLength: event.body ? event.body.length : 0
+  });
+  
+  console.log('ENVIRONMENT:', {
+    nodeEnv: process.env.NODE_ENV,
+    netlifyEnv: process.env.NETLIFY,
+    functionName: context.functionName,
+    deployId: process.env.DEPLOY_ID
   });
 
   // Verificar se é uma requisição POST
   if (event.httpMethod !== 'POST') {
-    log.error('Method not allowed', null, {
-      requestId,
-      method: event.httpMethod
-    });
-    
+    console.error('INVALID_METHOD:', event.httpMethod);
     return {
       statusCode: 405,
       headers: {
@@ -81,17 +77,17 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    log.info('Starting upload simulation', { requestId });
+    console.log('PROCESSING:', 'Starting upload simulation');
 
     // Validar o corpo da requisição
     const bodyValidation = validateRequestBody(event.body);
     if (!bodyValidation.valid) {
-      throw new Error('Invalid request body');
+      throw new Error(`Invalid request body: ${bodyValidation.error.message}`);
     }
 
     // Gerar ID simulado
     const id = 'simulated-id-' + requestId;
-    log.info('Generated ID', { requestId, id });
+    console.log('GENERATED_ID:', id);
 
     // Preparar resposta
     const responseBody = {
@@ -101,9 +97,9 @@ exports.handler = async (event, context) => {
       requestId
     };
 
-    log.info('Preparing response', { requestId, responseBody });
+    console.log('RESPONSE_BODY:', responseBody);
 
-    const response = {
+    return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -114,14 +110,12 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(responseBody)
     };
 
-    log.info('Response ready', { requestId, response });
-    return response;
-
   } catch (error) {
-    log.error('Processing failed', error, {
+    console.error('ERROR_PROCESSING:', {
+      message: error.message,
+      stack: error.stack,
       requestId,
-      body: event.body,
-      headers: event.headers
+      bodyLength: event.body ? event.body.length : 0
     });
 
     return {
