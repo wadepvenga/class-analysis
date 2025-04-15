@@ -10,6 +10,7 @@
   UPLOAD_DIR = "uploads"
   DEBUG = "true"
   LOGS_ACCESS_TOKEN = "6de3b4b6-8fcf-4a3a-9f7c-be55db65234e"
+  MAX_BODY_SIZE = "100mb"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -20,13 +21,16 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Headers específicos para tratar CORS
+# Headers específicos para tratar CORS e uploads grandes
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
     Access-Control-Allow-Headers = "*"
+    X-Content-Type-Options = "nosniff"
+    Content-Type = "application/json"
+    Transfer-Encoding = "chunked"
 
 [[headers]]
   for = "/*"
@@ -68,4 +72,7 @@
   external_node_modules = ["@google/generative-ai"]
 
 [functions.upload]
-  included_files = ["uploads/**"] 
+  included_files = ["uploads/**"]
+  maxDuration = 300
+  memory = 3008
+  nodeModules = ["formidable"] 
