@@ -78,12 +78,11 @@ exports.handler = async (event, context) => {
 
   try {
     console.log('PROCESSING:', 'Starting upload simulation');
+    console.log('Content-Type:', event.headers['content-type']);
+    console.log('RAW_BODY_LENGTH:', event.body ? event.body.length : 0);
 
-    // Validar o corpo da requisição
-    const bodyValidation = validateRequestBody(event.body);
-    if (!bodyValidation.valid) {
-      throw new Error(`Invalid request body: ${bodyValidation.error.message}`);
-    }
+    // Log dos headers para debug
+    console.log('HEADERS:', event.headers);
 
     // Gerar ID simulado
     const id = 'simulated-id-' + requestId;
