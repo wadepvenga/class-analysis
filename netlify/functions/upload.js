@@ -20,6 +20,13 @@ const log = {
   }
 };
 
+// Headers padrão para CORS
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+};
+
 // Função para validar o corpo da requisição
 const validateRequestBody = (body) => {
   if (!body) {
@@ -45,19 +52,18 @@ exports.handler = async (event, context) => {
   const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2);
   
   console.log('REQUEST_ID:', requestId);
-  console.log('EVENT:', {
-    httpMethod: event.httpMethod,
-    path: event.path,
-    headers: event.headers,
-    bodyLength: event.body ? event.body.length : 0
-  });
+  console.log('EVENT_METHOD:', event.httpMethod);
+  console.log('EVENT_PATH:', event.path);
   
-  console.log('ENVIRONMENT:', {
-    nodeEnv: process.env.NODE_ENV,
-    netlifyEnv: process.env.NETLIFY,
-    functionName: context.functionName,
-    deployId: process.env.DEPLOY_ID
-  });
+  // Handling OPTIONS request (CORS preflight)
+  if (event.httpMethod === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
+    return {
+      statusCode: 204,
+      headers: corsHeaders,
+      body: ''
+    };
+  }
 
   // Verificar se é uma requisição POST
   if (event.httpMethod !== 'POST') {
@@ -65,8 +71,8 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 405,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
         error: 'Método não permitido',
@@ -78,11 +84,19 @@ exports.handler = async (event, context) => {
 
   try {
     console.log('PROCESSING:', 'Starting upload simulation');
-    console.log('Content-Type:', event.headers['content-type']);
-    console.log('RAW_BODY_LENGTH:', event.body ? event.body.length : 0);
-
-    // Log dos headers para debug
-    console.log('HEADERS:', event.headers);
+    
+    // Log detalhado dos headers e body
+    console.log('CONTENT_TYPE:', event.headers['content-type']);
+    console.log('CONTENT_LENGTH:', event.headers['content-length']);
+    console.log('ALL_HEADERS:', JSON.stringify(event.headers, null, 2));
+    
+    // Log do início do body para diagnóstico
+    if (event.body) {
+      console.log('BODY_START:', event.body.substring(0, 200) + '...');
+      console.log('BODY_LENGTH:', event.body.length);
+    } else {
+      console.log('BODY: empty');
+    }
 
     // Gerar ID simulado
     const id = 'simulated-id-' + requestId;
@@ -90,6 +104,7 @@ exports.handler = async (event, context) => {
 
     // Preparar resposta
     const responseBody = {
+      success: true,
       id,
       message: 'Upload simulado com sucesso (modo diagnóstico).',
       timestamp: new Date().toISOString(),
@@ -101,29 +116,28 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
+        ...corsHeaders,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(responseBody)
     };
 
   } catch (error) {
-    console.error('ERROR_PROCESSING:', {
+    console.error('ERROR_DETAILS:', {
+      name: error.name,
       message: error.message,
       stack: error.stack,
-      requestId,
-      bodyLength: event.body ? event.body.length : 0
+      requestId
     });
 
     return {
       statusCode: 500,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        success: false,
         error: 'Falha no processamento do upload',
         details: error.message,
         type: error.name,
