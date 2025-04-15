@@ -69,10 +69,4 @@
 [functions]
   node_bundler = "esbuild"
   included_files = ["uploads/**"]
-  external_node_modules = ["@google/generative-ai", "formidable"]
-
-[functions.upload]
-  included_files = ["uploads/**"]
-  maxDuration = 300
-  memory = 3008
-  nodeModules = ["formidable"] 
+  external_node_modules = ["@google/generative-ai", "formidable"] 
